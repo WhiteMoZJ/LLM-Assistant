@@ -14,7 +14,7 @@ def retrieve_documents(query: str) -> dict:
     }
 
     headers = {
-        'Authorization': f"Bearer {open('key', 'r').read()}",
+        'Authorization': f"Bearer {open('config/key', 'r').read()}",
         'Content-Type': 'application/json'
     }
 
