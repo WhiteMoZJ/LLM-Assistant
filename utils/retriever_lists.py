@@ -3,8 +3,9 @@ ONLINE_SEARCH_TOOL = {
     "function": {
         "name": "retrieve_documents",
         "description": (
-            "Retrieve documents from the search engine based on the user query. "
-            "This tool is useful for fetching context to provide more accurate answers."
+            "Search the web for documents based on the user query. "
+            "Usually use this if the user is asking for information that is not in the knowledge base."
+            "If the user has a typo in their query, correct it before searching."
         ),
         "parameters": {
             "type": "object",
@@ -19,13 +20,13 @@ ONLINE_SEARCH_TOOL = {
     },
 }
 
-WEATHER_SEARCH_TOOL = {
+WEATHER_TOOL = {
     "type": "function",
     "function": {
         "name": "retrieve_weather",
         "description": (
-            "Retrieve weather information from the weather API based on the user query. "
-            "This tool is useful for fetching weather information for a specific location."
+            "Get the weather of a specific city and date. "
+            "Always use this if the user is asking for weather information."   
         ),
         "parameters": {
             "type": "object",
@@ -34,8 +35,12 @@ WEATHER_SEARCH_TOOL = {
                     "type": "string",
                     "description": "The city to retrieve weather information for",
                 },
+                "date": {
+                    "type": "string",
+                    "description": "The date to retrieve weather information for",
+                },
             },
-            "required": ["city"],
+            "required": ["city", "date"],
         },
     },
 }

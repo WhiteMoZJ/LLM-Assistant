@@ -1,12 +1,12 @@
 from utils.chat_engine import ChatEngine
 
 def chat_loop():
-    chatEngine = ChatEngine()
+    chatEngine = ChatEngine("http://localhost:1234/v1", "lm-studio", "deepseek-r1-distill-llama-8b")
     while True:
-        user_input = input("\nYou: ").strip()
-        if user_input.lower() == "quit":
+        user_input = input("\nYou>>").strip()
+        if user_input.lower() == "/bye":
             break
-        print("\nAssistant:", end=" ", flush=True)
+        print("\nAssistant>>", end=" ", flush=True)
         chatEngine.generate_response(user_input)
 
 
