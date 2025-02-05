@@ -9,7 +9,7 @@ from .tools import get_pinyin
 #     "search_key": "YOUR_SEARCH_API_KEY",
 #     "weather_key": "YOUR_WEATHER_API_KEY"
 # }
-with open("config/key.json", "r") as f:
+with open("ChatEngine/config/key.json", "r") as f:
     key = json.load(f)
     search_key = key["search_key"]
     weather_key = key["weather_key"]
