@@ -1,5 +1,6 @@
 import json
 import requests
+from pypinyin import Pinyin
 
 # Load the API keys from the configuration file
 # located at ChatEngine/config/key.json
@@ -14,12 +15,12 @@ with open("ChatEngine/config/key.json", "r") as f:
     weather_key = key["weather_key"]
 
 # Define a function to retrieve documents from the search engine
-def retrieve_documents(query: str) -> dict:
+def retrieve_documents(search_query: str) -> dict:
     # Using bochiai search API @https://open.bochaai.com/
     # Replace with the API you use if different
     search_url = "https://api.bochaai.com/v1/web-search"
     params = {
-        "query": query,
+        "query": search_query,
         "freshness": "oneYear",
         "summary": True,
         "count": 10,
@@ -34,15 +35,32 @@ def retrieve_documents(query: str) -> dict:
     response = requests.request("POST", search_url, headers=headers, data=json.dumps(params))
 
     if response.status_code == 200:
-        # with open("./text.json","w") as f:
-        #     json.dump(response.json(), f, ensure_ascii=False, indent=4)
-        context = "\n".join([item['summary'] for item in response.json()['data']['webPages']['value']])  # Combine the documents into a single string
+        if len(response.json()['data']['webPages']['value']) < 3:
+            params = {
+                "query": search_query,
+                "freshness": "noLimit",
+                "summary": True,
+                "count": 10,
+            }
+            response = requests.request("POST", search_url, headers=headers, data=json.dumps(params))
+
+    if response.status_code == 200:
+        # comment out the following line to disable logging
+        with open("ChatEngine/log/search_log.json", "w") as f:
+            json.dump(response.json(), f, ensure_ascii=False, indent=4)
+            
+        context = [{
+                    "title": item['name'],
+                    "url": item['url'],
+                    "context": item['summary'],
+                    } 
+                    for item in response.json()['data']['webPages']['value']]
+
         return {
              "status": "success",
              "content": context
         }
 
-from xpinyin import Pinyin
 
 def get_pinyin(name):
     s = Pinyin().get_pinyin(name).split('-')
@@ -136,7 +154,8 @@ def retrieve_weather(city: str, date: str) -> dict:
             "last_update": data["current"]["last_updated"]
         }
 
-        with open("ChatEngine/data/weather.json", "w") as f:
+        # comment out the following line to disable logging
+        with open("ChatEngine/log/weather-{}-{}.json".format(city, date), "w") as f:
             json.dump(context, f, ensure_ascii=False, indent=4)
 
         return {
@@ -145,3 +164,4 @@ def retrieve_weather(city: str, date: str) -> dict:
         }
     
 # print(retrieve_weather("北京", "2025-02-07"))
+# print(retrieve_documents("皮昊旋"))

@@ -5,8 +5,9 @@ import os
 from openai import OpenAI
 
 from .retriever import retrieve_documents, retrieve_weather
-from .retriever_lists import ONLINE_SEARCH_TOOL, WEATHER_TOOL
+from .retriever_lists import tools
 from .spinner import Spinner
+from .tools import messages_log
 
 class ChatEngine:
     '''
@@ -23,13 +24,6 @@ class ChatEngine:
             self.model = model
             self.messages = [{"role": "system", "content": "你是一个AI助手，语言风格有趣，可以带emoji表情，主要回答用户疑问。"}]
             self.messages.append({"role": "assistant", "content": f"today date: {self.date}"})
-
-            # check url connection
-            try:
-                self.client.chat.get()
-            except Exception as e:
-                print("Error connecting to the API. Please check your base URL and API key.")
-                exit(1)
 
             history_file = "ChatEngine/data/history.json"
             # check history.json file
@@ -64,12 +58,12 @@ class ChatEngine:
         print("\n(Type '/bye' to exit)")
 
     def generate_response(self, query):
-        self.messages.extend(self.history[-5:])
+        self.messages.extend(self.history)
         messages = self.messages
         messages.append({"role": "user", "content": query})
 
         searchmessages = [
-            {"role": "system", "content": f"You are a search engine, date of today：{self.date}"}, 
+            {"role": "system", "content": f"你是一个搜索引擎, date of today：{self.date}"}, 
             {"role": "user", "content": query}
         ]
         print("\nAssistant>>", end=" ", flush=True)
@@ -78,76 +72,59 @@ class ChatEngine:
                 response = self.client.chat.completions.create(
                         model=self.model,
                         messages=searchmessages,
-                        temperature=0.7,
+                        temperature=0.8,
                         max_tokens=1024,
-                        tools=[ONLINE_SEARCH_TOOL, WEATHER_TOOL],
+                        tools=tools,
                 )
                 if response.choices[0].message.tool_calls:
                     # Handle all tool calls
                     tool_calls = response.choices[0].message.tool_calls
-
-                    # Add all tool calls to messages
-                    messages.append(
-                            {
-                                "role": "assistant",
-                                "tool_calls": [
-                                    {
-                                        "id": tool_call.id,
-                                        "type": tool_call.type,
-                                        "function": tool_call.function,
-                                    }
-                                    for tool_call in tool_calls
-                                ],
-                            }
-                    )
                     for tool_call in tool_calls:
                         try:
-                            result = {"status": "error", "content": ""}
-                            if tool_call.function.name == "retrieve_documents":
-                                args = json.loads(tool_call.function.arguments)
-                                # Retrieve documents (context) from the search engine
-                                result = retrieve_documents(args["search_query"])
-                            elif tool_call.function.name == "retrieve_weather":
-                                args = json.loads(tool_call.function.arguments)
-                                # Retrieve weather information
-                                if args["date"] == None:
-                                    args["date"] = self.date
-                                result = retrieve_weather(args["city"], args["date"])
+                            result = {"status": "error", "content": "None"}
+                            args = json.loads(tool_call.function.arguments)
+                            
+                            # if tool_call.function.name == "retrieve_documents":
+                            #     result = retrieve_documents(args["search_query"])
+                            # elif tool_call.function.name == "retrieve_weather":
+                            #     result = retrieve_weather(args["city"], args["date"])
 
-                            if result["status"] == "success":
-                                messages.append(
-                                        {
-                                            "role": "tool",
-                                            "content": json.dumps(result['content'], ensure_ascii=False),
-                                            "tool_call_id": tool_call.id,
-                                        }
-                                )
-                                # Print the ontent in a formatted way
+                            result = globals()[tool_call.function.name](**args)
+
+                            messages.append(
+                                    {
+                                        "tool_call_id": tool_call.id,
+                                        "role": "tool",
+                                        "name": tool_call.function.name,
+                                        "content": json.dumps(result['content'], ensure_ascii=False)
+                                    }
+                            )
+                            # Print the ontent in a formatted way
                                 
-                                # import shutil
-                                # terminal_width = shutil.get_terminal_size().columns
-                                # print("\n" + "=" * terminal_width)
-                                # print("-" * terminal_width)
-                                # print(result["content"])
-                                # print("=" * terminal_width + "\n")
+                            # import shutil
+                            # terminal_width = shutil.get_terminal_size().columns
+                            # print("\n" + "=" * terminal_width)
+                            # print("-" * terminal_width)
+                            # print(result["content"])
+                            # print("=" * terminal_width + "\n")
 
-                            else:
-                                messages.append(
-                                        {
-                                            "role": "assistant",
-                                            "content": "网络错误，请稍后再试。",
-                                        }
-                                )
                         except Exception as e:
-                            continue
+                            print(
+                                "An error occurred while processing your request. Please try again later.\n"
+                                f"Error details: {str(e)}\n"
+                            )
+                            exit(1)
 
-            stream_response = self.client.chat.completions.create(
-                    model=self.model,
-                    messages=messages,
-                    temperature=0.8,
-                    max_tokens=4096,
-                    stream=True
-            )
+                stream_response = self.client.chat.completions.create(
+                        model=self.model,
+                        messages=messages_log(messages, "stream_response"), # if don't need log, use messages
+                        temperature=0.8,
+                        max_tokens=4096,
+                        frequency_penalty=0.8,
+                        presence_penalty=0.5,
+                        top_p=0.95,
+                        stream=True
+                )
             
             # Stream the post-tool-call response
             think_content = ""
@@ -174,7 +151,7 @@ class ChatEngine:
             self.history.append(
                 {
                     "role": "assistant",
-                    "content": dialog_content
+                    "content": think_content + dialog_content
                 }
             )
 
