@@ -1,5 +1,4 @@
 import json
-import shutil
 import time
 
 from openai import OpenAI
@@ -17,12 +16,24 @@ class ChatEngine:
     - model: The model name to use for the chat interaction
     '''
     def __init__(self, base_url, api_key, model):
-        self.client = OpenAI(base_url=base_url, api_key=api_key)
-        self.model = model
-        self.messages= [{"role": "system", "content": "你是一个AI助手，语言风格有趣，可以带emoji表情，主要回答用户疑问。"}]
+        with Spinner("Initializing profiles"):
+            self.date = time.strftime("%Y-%m-%d", time.localtime())
+            self.client = OpenAI(base_url=base_url, api_key=api_key)
+            self.model = model
+            self.messages = [{"role": "system", "content": "你是一个AI助手，语言风格有趣，可以带emoji表情，主要回答用户疑问。"}]
+            self.messages.append({"role": "assistant", "content": f"today date: {self.date}"})
+
+            # check history.json file
+            try:
+                with open("ChatEngine/config/history.json", "r") as f:
+                    # read last 5 history messages
+                    self.history = json.load(f)[-5:]
+                    welcome_message = "你好，欢迎回来！"
+            except FileNotFoundError:
+                self.history = []
+                welcome_message = "你好，初次见面！"
 
         print("Assistant>>")
-        welcome_message = "你好，欢迎回来！"
         for char in welcome_message:
             print(char, end="", flush=True)
             time.sleep(0.05)
@@ -30,13 +41,13 @@ class ChatEngine:
         print("\n(Type '/bye' to exit)")
 
     def generate_response(self, query):
-        date = time.strftime("%Y-%m-%d", time.localtime())
+        
+        self.messages.extend(self.history[-5:])
         messages = self.messages
-        messages.append({"role": "assistant", "content": f"today date: {date}"})
         messages.append({"role": "user", "content": query})
 
         searchmessages = [
-            {"role": "system", "content": f"你是一个AI助手，今日日期：{date}"}, 
+            {"role": "system", "content": f"你是一个AI助手，今日日期：{self.date}"}, 
             {"role": "user", "content": query}
         ]
         print("\nAssistant>>", end=" ", flush=True)
@@ -78,7 +89,7 @@ class ChatEngine:
                                 args = json.loads(tool_call.function.arguments)
                                 # Retrieve weather information
                                 if args["date"] == None:
-                                    args["date"] = date
+                                    args["date"] = self.date
                                 result = retrieve_weather(args["city"], args["date"])
 
                             if result["status"] == "success":
@@ -90,6 +101,8 @@ class ChatEngine:
                                         }
                                 )
                                 # Print the ontent in a formatted way
+                                
+                                # import shutil
                                 # terminal_width = shutil.get_terminal_size().columns
                                 # print("\n" + "=" * terminal_width)
                                 # print("-" * terminal_width)
@@ -130,12 +143,23 @@ class ChatEngine:
                         dialog_content += content
             print()  # New line after streaming completes
 
-            self.messages.append(
+            self.history.append(
                 {
-                    "role": "assistant",
-                    "content": dialog_content,
+                    "role": "user",
+                    "content": query
                 }
             )
+            self.history.append(
+                {
+                    "role": "assistant",
+                    "content": dialog_content
+                }
+            )
+
+            # Save the chat history to history.json
+            with open("ChatEngine/config/history.json", "w") as f:
+                json.dump(self.history, f, ensure_ascii=False, indent=4)
+
         except Exception as e:
             print(
                 "An error occurred while processing your request. Please try again later.\n"

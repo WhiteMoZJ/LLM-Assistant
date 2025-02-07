@@ -3,7 +3,7 @@ import requests
 from .tools import get_pinyin
 
 # Load the API keys from the configuration file
-# located at {project root folder}/config/key.json
+# located at ChatEngine/config/key.json
 # Format:
 # {
 #     "search_key": "YOUR_SEARCH_API_KEY",
@@ -79,8 +79,8 @@ def retrieve_weather(city: str, date: str) -> dict:
             ],
         }
 
-        with open("weather.json", "w") as f:
-            json.dump(data, f, ensure_ascii=False, indent=4)
+        # with open("weather.json", "w") as f:
+        #     json.dump(data, f, ensure_ascii=False, indent=4)
 
         return {
             "status": "success",
