@@ -1,5 +1,6 @@
 import json
 import time
+import os
 
 from openai import OpenAI
 
@@ -23,15 +24,37 @@ class ChatEngine:
             self.messages = [{"role": "system", "content": "你是一个AI助手，语言风格有趣，可以带emoji表情，主要回答用户疑问。"}]
             self.messages.append({"role": "assistant", "content": f"today date: {self.date}"})
 
+            # check url connection
+            try:
+                self.client.chat.get()
+            except Exception as e:
+                print("Error connecting to the API. Please check your base URL and API key.")
+                exit(1)
+
+            history_file = "ChatEngine/data/history.json"
             # check history.json file
             try:
-                with open("ChatEngine/config/history.json", "r") as f:
-                    # read last 5 history messages
-                    self.history = json.load(f)[-5:]
-                    welcome_message = "你好，欢迎回来！"
+                with open(history_file, "r") as f:
+                    # if history.json exists but empty
+                    if os.stat(history_file).st_size == 0:
+                        self.history = []
+                        welcome_message = "你好，初次见面！"
+                    elif os.stat(history_file).st_size >= 10:
+                        # read last 10 history messages, 5 pairs of user input and response
+                        self.history = json.load(f)[-10:]
+                        welcome_message = "你好，欢迎回来！"
+                    else:
+                        # read last few history messages
+                        self.history = json.load(f)
+                        if len(self.history) == 0:
+                            welcome_message = "你好，初次见面！"
+                        else:
+                            welcome_message = "你好，欢迎回来！"
             except FileNotFoundError:
                 self.history = []
                 welcome_message = "你好，初次见面！"
+
+            # print(self.history)
 
         print("Assistant>>")
         for char in welcome_message:
@@ -41,13 +64,12 @@ class ChatEngine:
         print("\n(Type '/bye' to exit)")
 
     def generate_response(self, query):
-        
         self.messages.extend(self.history[-5:])
         messages = self.messages
         messages.append({"role": "user", "content": query})
 
         searchmessages = [
-            {"role": "system", "content": f"你是一个AI助手，今日日期：{self.date}"}, 
+            {"role": "system", "content": f"You are a search engine, date of today：{self.date}"}, 
             {"role": "user", "content": query}
         ]
         print("\nAssistant>>", end=" ", flush=True)
@@ -96,7 +118,7 @@ class ChatEngine:
                                 messages.append(
                                         {
                                             "role": "tool",
-                                            "content": json.dumps(result["content"], ensure_ascii=False),
+                                            "content": json.dumps(result['content'], ensure_ascii=False),
                                             "tool_call_id": tool_call.id,
                                         }
                                 )
@@ -157,7 +179,7 @@ class ChatEngine:
             )
 
             # Save the chat history to history.json
-            with open("ChatEngine/config/history.json", "w") as f:
+            with open("ChatEngine/data/history.json", "w") as f:
                 json.dump(self.history, f, ensure_ascii=False, indent=4)
 
         except Exception as e:

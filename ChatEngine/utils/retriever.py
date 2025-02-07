@@ -1,6 +1,5 @@
 import json
 import requests
-from .tools import get_pinyin
 
 # Load the API keys from the configuration file
 # located at ChatEngine/config/key.json
@@ -43,46 +42,106 @@ def retrieve_documents(query: str) -> dict:
              "content": context
         }
 
+from xpinyin import Pinyin
+
+def get_pinyin(name):
+    s = Pinyin().get_pinyin(name).split('-')
+    result = ''
+    for i in range(0,len(s)):
+        result = result+s[i].capitalize()
+    return result
 
 def retrieve_weather(city: str, date: str) -> dict:
     # Using WeatherMap API @https://www.weatherapi.com/
     # Replace with the API you use if different
     # check city string is chinese or english
-    if city.encode('UTF-8').isalpha():
-        city = get_pinyin(city)
     base_url = "http://api.weatherapi.com/v1"
     params = {
         "key": weather_key,
-        "q": city,
+        "q": get_pinyin(city), # Convert the city name to pinyin if it is in Chinese
         "dt": date,
-        "days": 3,
+        "days": 1,
         "lang": "zh_cmn",
     }
 
     # Sending request to the weather API
     response = requests.get(f"{base_url}/forecast.json", params=params)
+    print(response)
 
     if response.status_code == 200:
         data = response.json()
         context = {
-            "city": data["location"]["name"],
-            "forcast": [
-                {
-                    "date": item["date"],
-                    "condition": item["day"]["condition"]["text"],
-                    "max temperature": item["day"]["maxtemp_c"],
-                    "min temperature": item["day"]["mintemp_c"],
-                    "humidity": item["day"]["avghumidity"],
-                    "wind": item["day"]["maxwind_kph"]
+            "weather": {
+                "current":{
+                    "description": data["current"]["condition"]["text"],
+                    "temperature": {
+                        "current": {
+                            "value": data["current"]["temp_c"],
+                            "unit": "°C"
+                        },
+                        "Feels like": {
+                            "value": data["current"]["feelslike_c"],
+                            "unit": "°C"
+                        }
+                    },
+                    "humidity": {
+                        "value": data["current"]["humidity"],
+                        "unit": "%"
+                    },
+                    "wind_speed":{
+                        "value": data["current"]["wind_kph"],
+                        "unit": "km/h"
+                    },
+                    "precipitation": {
+                        "value": data["current"]["precip_mm"],
+                        "unit": "mm"
+                    },
+                    "uv": {
+                        "value": data["current"]["uv"],
+                        "unit": ""
+                    }
+                },
+                "forecast": {
+                    "description": data["forecast"]["forecastday"][0]["day"]["condition"]["text"],
+                    "temperature": {
+                        "max": {
+                            "value": data["forecast"]["forecastday"][0]["day"]["maxtemp_c"],
+                            "unit": "°C"
+                        },
+                        "min": {
+                            "value": data["forecast"]["forecastday"][0]["day"]["mintemp_c"],
+                            "unit": "°C"
+                        },
+                        "avg": {
+                            "value": data["forecast"]["forecastday"][0]["day"]["avgtemp_c"],
+                            "unit": "°C"
+                        }
+                    },
+                    "rain": {
+                        "change of rain": {
+                            "value": data["forecast"]["forecastday"][0]["day"]["daily_chance_of_rain"],
+                            "unit": "%"
+                        },
+                        "precipitation": {
+                            "value": data["forecast"]["forecastday"][0]["day"]["totalprecip_mm"],
+                            "unit": "mm"
+                        }
+                    },
+                    "astro": {
+                        "sunrise": data["forecast"]["forecastday"][0]["astro"]["sunrise"],
+                        "sunset": data["forecast"]["forecastday"][0]["astro"]["sunset"]
+                    }
                 }
-                for item in data["forecast"]["forecastday"]
-            ],
+            },
+            "last_update": data["current"]["last_updated"]
         }
 
-        # with open("weather.json", "w") as f:
-        #     json.dump(data, f, ensure_ascii=False, indent=4)
+        with open("ChatEngine/data/weather.json", "w") as f:
+            json.dump(context, f, ensure_ascii=False, indent=4)
 
         return {
             "status": "success",
             "content": context
         }
+    
+# print(retrieve_weather("北京", "2025-02-07"))

@@ -33,11 +33,11 @@ WEATHER_TOOL = {
             "properties": {
                 "city": {
                     "type": "string",
-                    "description": "The city to retrieve weather information for",
+                    "description": "The city",
                 },
                 "date": {
                     "type": "string",
-                    "description": "The date to retrieve weather information for",
+                    "description": "The date",
                 },
             },
             "required": ["city", "date"],
