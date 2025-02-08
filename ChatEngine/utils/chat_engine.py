@@ -17,15 +17,18 @@ class ChatEngine:
     - api_key: The API key for the OpenAI API.
     - model: The model name to use for the chat interaction
     '''
-    def __init__(self, base_url, api_key, model):
+    def __init__(self, base_url):
         with Spinner("Initializing profiles"):
             self.date = time.strftime("%Y-%m-%d", time.localtime())
-            self.client = OpenAI(base_url=base_url, api_key=api_key)
-            self.model = model
+            self.client = OpenAI(base_url=base_url)
+            self.model = "deepseek-r1-distill-llama-8b"
             self.messages = [{"role": "system", "content": "你是一个AI助手，语言风格有趣，可以带emoji表情，主要回答用户疑问。"}]
             self.messages.append({"role": "assistant", "content": f"today date: {self.date}"})
 
-            history_file = "ChatEngine/data/history.json"
+            if os.path.exists("ChatEngine/.data") == False:
+                os.mkdir("ChatEngine/.data")
+
+            history_file = "ChatEngine/.data/history.json"
             # check history.json file
             try:
                 with open(history_file, "r") as f:
@@ -33,9 +36,9 @@ class ChatEngine:
                     if os.stat(history_file).st_size == 0:
                         self.history = []
                         welcome_message = "你好，初次见面！"
-                    elif os.stat(history_file).st_size >= 10:
-                        # read last 10 history messages, 5 pairs of user input and response
-                        self.history = json.load(f)[-10:]
+                    elif os.stat(history_file).st_size >= 20:
+                        # read last 20 history messages, 10 pairs of user input and response
+                        self.history = json.load(f)[-20:]
                         welcome_message = "你好，欢迎回来！"
                     else:
                         # read last few history messages
@@ -117,7 +120,7 @@ class ChatEngine:
 
                 stream_response = self.client.chat.completions.create(
                         model=self.model,
-                        messages=messages_log(messages, "stream_response"), # if don't need log, use messages
+                        messages=messages,
                         temperature=0.8,
                         max_tokens=4096,
                         frequency_penalty=0.8,
@@ -151,12 +154,12 @@ class ChatEngine:
             self.history.append(
                 {
                     "role": "assistant",
-                    "content": think_content + dialog_content
+                    "content": dialog_content
                 }
             )
 
             # Save the chat history to history.json
-            with open("ChatEngine/data/history.json", "w") as f:
+            with open("ChatEngine/.data/history.json", "w") as f:
                 json.dump(self.history, f, ensure_ascii=False, indent=4)
 
         except Exception as e:

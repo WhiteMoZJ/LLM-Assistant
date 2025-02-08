@@ -1,6 +1,5 @@
 import json
 import time
-import os
 
 def messages_log(message:dict, response: str) -> dict:
     log_message = {
@@ -9,7 +8,7 @@ def messages_log(message:dict, response: str) -> dict:
         "message": message
     }
 
-    log_file = f"ChatEngine/log/log-{time.strftime('%Y-%m-%d', time.localtime())}.json"
+    log_file = f"ChatEngine/.log/log-{time.strftime('%Y-%m-%d', time.localtime())}.json"
     with open(log_file, "a") as f:
         json.dump(log_message, f, ensure_ascii=False, indent=4)
 

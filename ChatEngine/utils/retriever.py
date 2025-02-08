@@ -1,5 +1,6 @@
 import json
 import requests
+import os
 from xpinyin import Pinyin
 
 # Load the API keys from the configuration file
@@ -9,10 +10,6 @@ from xpinyin import Pinyin
 #     "search_key": "YOUR_SEARCH_API_KEY",
 #     "weather_key": "YOUR_WEATHER_API_KEY"
 # }
-with open("ChatEngine/config/key.json", "r") as f:
-    key = json.load(f)
-    search_key = key["search_key"]
-    weather_key = key["weather_key"]
 
 # Define a function to retrieve documents from the search engine
 def retrieve_documents(search_query: str) -> dict:
@@ -34,6 +31,7 @@ def retrieve_documents(search_query: str) -> dict:
     # Sending request to the search API
     response = requests.request("POST", search_url, headers=headers, data=json.dumps(params))
 
+    #TODO: refactor search method, replace with selenium
     if response.status_code == 200:
         if len(response.json()['data']['webPages']['value']) < 3:
             params = {
@@ -46,7 +44,7 @@ def retrieve_documents(search_query: str) -> dict:
 
     if response.status_code == 200:
         # comment out the following line to disable logging
-        with open("ChatEngine/log/search_log.json", "w") as f:
+        with open("ChatEngine/.log/search_log.json", "w") as f:
             json.dump(response.json(), f, ensure_ascii=False, indent=4)
             
         context = [{
@@ -155,13 +153,20 @@ def retrieve_weather(city: str, date: str) -> dict:
         }
 
         # comment out the following line to disable logging
-        with open("ChatEngine/log/weather-{}-{}.json".format(city, date), "w") as f:
+        with open("ChatEngine/.log/weather-{}-{}.json".format(city, date), "w") as f:
             json.dump(context, f, ensure_ascii=False, indent=4)
 
         return {
             "status": "success",
             "content": context
         }
+    
+with open("ChatEngine/config/key.json", "r") as f:
+    key = json.load(f)
+    search_key = key["search_key"]
+    weather_key = key["weather_key"]
+if os.path.exists("ChatEngine/.log") == False:
+    os.mkdir("ChatEngine/.log")
     
 # print(retrieve_weather("北京", "2025-02-07"))
 # print(retrieve_documents("皮昊旋"))
