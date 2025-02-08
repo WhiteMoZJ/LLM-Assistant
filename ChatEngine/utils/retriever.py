@@ -1,6 +1,6 @@
 import json
 import requests
-from pypinyin import Pinyin
+from xpinyin import Pinyin
 
 # Load the API keys from the configuration file
 # located at ChatEngine/config/key.json
