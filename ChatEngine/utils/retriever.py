@@ -32,15 +32,15 @@ def retrieve_documents(search_query: str) -> dict:
     response = requests.request("POST", search_url, headers=headers, data=json.dumps(params))
 
     #TODO: refactor search method, replace with selenium
-    if response.status_code == 200:
-        if len(response.json()['data']['webPages']['value']) < 3:
-            params = {
-                "query": search_query,
-                "freshness": "noLimit",
-                "summary": True,
-                "count": 10,
-            }
-            response = requests.request("POST", search_url, headers=headers, data=json.dumps(params))
+
+    if response.status_code == 200 and len(response.json()['data']['webPages']['value']) < 3:
+        params = {
+            "query": search_query,
+            "freshness": "noLimit",
+            "summary": True,
+            "count": 10,
+        }
+        response = requests.request("POST", search_url, headers=headers, data=json.dumps(params))
 
     if response.status_code == 200:
         # comment out the following line to disable logging

@@ -20,7 +20,7 @@ class ChatEngine:
     def __init__(self, base_url):
         with Spinner("Initializing profiles"):
             self.date = time.strftime("%Y-%m-%d", time.localtime())
-            self.client = OpenAI(base_url=base_url)
+            self.client = OpenAI(base_url=base_url, api_key="llama.cpp")
             self.model = "deepseek-r1-distill-llama-8b"
             self.messages = [{"role": "system", "content": "你是一个AI助手，语言风格有趣，可以带emoji表情，主要回答用户疑问。"}]
             self.messages.append({"role": "assistant", "content": f"today date: {self.date}"})
@@ -66,7 +66,7 @@ class ChatEngine:
         messages.append({"role": "user", "content": query})
 
         searchmessages = [
-            {"role": "system", "content": f"你是一个搜索引擎, date of today：{self.date}"}, 
+            {"role": "system", "content": f"You are a helpful assistant. The current date is {self.date}"}, 
             {"role": "user", "content": query}
         ]
         print("\nAssistant>>", end=" ", flush=True)
@@ -83,14 +83,11 @@ class ChatEngine:
                     # Handle all tool calls
                     tool_calls = response.choices[0].message.tool_calls
                     for tool_call in tool_calls:
+                        if tool_call.function.name not in [tool['function']['name'] for tool in tools]:
+                            continue
+                        result = {"status": "error", "content": "None"}
                         try:
-                            result = {"status": "error", "content": "None"}
                             args = json.loads(tool_call.function.arguments)
-                            
-                            # if tool_call.function.name == "retrieve_documents":
-                            #     result = retrieve_documents(args["search_query"])
-                            # elif tool_call.function.name == "retrieve_weather":
-                            #     result = retrieve_weather(args["city"], args["date"])
 
                             result = globals()[tool_call.function.name](**args)
 
