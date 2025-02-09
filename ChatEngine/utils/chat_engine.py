@@ -5,22 +5,28 @@ import os
 from openai import OpenAI
 
 from .retriever import retrieve_documents, retrieve_weather
-from .retriever_lists import tools
+from .retriever import tools
 from .spinner import Spinner
-from .tools import messages_log
+# from .tools import sovle_massage
 
 class ChatEngine:
     '''
     ChatEngine class to handle the chat interaction with the AI model.
     Initial parameters:
     - base_url: The base URL of the OpenAI API.
-    - api_key: The API key for the OpenAI API.
     - model: The model name to use for the chat interaction
     '''
     def __init__(self, base_url):
+        # check the connection to the OpenAI API
+        api_key = ""
+        if base_url == "http://localhost:1234/v1":
+            api_key = "lm-studio"
+        elif base_url == "http://localhost:8080/v1":
+            api_key = "llama.cpp"
+        self.client = OpenAI(base_url=base_url, api_key=api_key)
+
         with Spinner("Initializing profiles"):
             self.date = time.strftime("%Y-%m-%d", time.localtime())
-            self.client = OpenAI(base_url=base_url, api_key="llama.cpp")
             self.model = "deepseek-r1-distill-llama-8b"
             self.messages = [{"role": "system", "content": "你是一个AI助手，语言风格有趣，可以带emoji表情，主要回答用户疑问。"}]
             self.messages.append({"role": "assistant", "content": f"today date: {self.date}"})
@@ -53,12 +59,12 @@ class ChatEngine:
 
             # print(self.history)
 
-        print("Assistant>>")
+        print("Assistant >>")
         for char in welcome_message:
             print(char, end="", flush=True)
             time.sleep(0.05)
 
-        print("\n(Type '/bye' to exit)")
+        print("\n(Type '/' or '/help' for help, '/bye' to exit)")
 
     def generate_response(self, query):
         self.messages.extend(self.history)
@@ -66,7 +72,8 @@ class ChatEngine:
         messages.append({"role": "user", "content": query})
 
         searchmessages = [
-            {"role": "system", "content": f"You are a helpful assistant. The current date is {self.date}"}, 
+            {"role": "system", "content": f"You are a AI assistant. "}, 
+            {"role": "assistant", "content": f"The current date is {self.date}"},
             {"role": "user", "content": query}
         ]
         print("\nAssistant>>", end=" ", flush=True)
@@ -75,15 +82,16 @@ class ChatEngine:
                 response = self.client.chat.completions.create(
                         model=self.model,
                         messages=searchmessages,
-                        temperature=0.8,
+                        temperature=0.7,
                         max_tokens=1024,
                         tools=tools,
+                        tool_choice="auto"
                 )
                 if response.choices[0].message.tool_calls:
                     # Handle all tool calls
-                    tool_calls = response.choices[0].message.tool_calls
-                    for tool_call in tool_calls:
-                        if tool_call.function.name not in [tool['function']['name'] for tool in tools]:
+                    for tool_call in response.choices[0].message.tool_calls:
+                        # print(tool_call.function.name)
+                        if not tool_call.function.name in [tool['function']['name'] for tool in tools]:
                             continue
                         result = {"status": "error", "content": "None"}
                         try:
@@ -93,8 +101,8 @@ class ChatEngine:
 
                             messages.append(
                                     {
-                                        "tool_call_id": tool_call.id,
                                         "role": "tool",
+                                        # "tool_call_id": tool_call.id,
                                         "name": tool_call.function.name,
                                         "content": json.dumps(result['content'], ensure_ascii=False)
                                     }
@@ -113,7 +121,6 @@ class ChatEngine:
                                 "An error occurred while processing your request. Please try again later.\n"
                                 f"Error details: {str(e)}\n"
                             )
-                            exit(1)
 
                 stream_response = self.client.chat.completions.create(
                         model=self.model,
@@ -133,7 +140,7 @@ class ChatEngine:
             for chunk in stream_response:
                 content = chunk.choices[0].delta.content
                 if content:
-                    if not think_content.endswith("</think>"):
+                    if not think_content.endswith("</think>\n\n"):
                             print(content, end="", flush=True)
                             think_content += content
                     else:
@@ -166,4 +173,13 @@ class ChatEngine:
             )
             exit(1)
 
-        
+    # get history
+    def get_history(self):
+        print("\nChat History:")
+        print("\n".join([f"{item['role']}>> {item['content']}" for item in self.history]))
+    
+    # reset history
+    def reset_history(self):
+        self.history = []
+        with open("ChatEngine/.data/history.json", "w") as f:
+            json.dump(self.history, f, ensure_ascii=False, indent=4)

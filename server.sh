@@ -5,4 +5,4 @@ export MAX_TOKENS=8192
 # Start the server
 # I put llama.cpp in Server folder
 # replace the path with your own
-Server/llama.cpp/llama-server -m Server/models/$MODEL -ngl $OFFLOAD -c $MAX_TOKENS -fa --port 8080 --jinja
+Server/llama.cpp/llama-server --jinja --port 8080 -m Server/models/$MODEL -ngl $OFFLOAD -c $MAX_TOKENS

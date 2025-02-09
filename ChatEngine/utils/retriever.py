@@ -1,7 +1,6 @@
 import json
 import requests
 import os
-from xpinyin import Pinyin
 
 # Load the API keys from the configuration file
 # located at ChatEngine/config/key.json
@@ -60,13 +59,6 @@ def retrieve_documents(search_query: str) -> dict:
         }
 
 
-def get_pinyin(name):
-    s = Pinyin().get_pinyin(name).split('-')
-    result = ''
-    for i in range(0,len(s)):
-        result = result+s[i].capitalize()
-    return result
-
 def retrieve_weather(city: str, date: str) -> dict:
     # Using WeatherMap API @https://www.weatherapi.com/
     # Replace with the API you use if different
@@ -74,7 +66,7 @@ def retrieve_weather(city: str, date: str) -> dict:
     base_url = "http://api.weatherapi.com/v1"
     params = {
         "key": weather_key,
-        "q": get_pinyin(city), # Convert the city name to pinyin if it is in Chinese
+        "q": city,
         "dt": date,
         "days": 1,
         "lang": "zh_cmn",
@@ -169,4 +161,52 @@ if os.path.exists("ChatEngine/.log") == False:
     os.mkdir("ChatEngine/.log")
     
 # print(retrieve_weather("北京", "2025-02-07"))
-# print(retrieve_documents("皮昊旋"))
+# print(retrieve_documents("八奈见杏菜"))
+
+tools = [
+    {
+        "type": "function",
+        "function": {
+            "name": "retrieve_documents",
+            "description": (
+                "Search the web based on the user query. "
+                "Usually use this if the user is asking for information that is not in the knowledge base."
+                "If the user has a typo in their query, correct it before searching."
+            ),
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "search_query": {
+                        "type": "string",
+                        "description": "The user query to retrieve documents for",
+                    },
+                },
+                "required": ["search_query"],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "retrieve_weather",
+            "description": (
+                "Get the weather of a specific city and date(default today). "
+                "Always use this if the user is asking for the weather of a specific city and date."
+            ),
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "city": {
+                        "type": "string",
+                        "description": "The city, always in English",
+                    },
+                    "date": {
+                        "type": "string",
+                        "description": "The date, format: YYYY-MM-DD",
+                    },
+                },
+                "required": ["city", "date"],
+            },
+        },
+    }
+]
