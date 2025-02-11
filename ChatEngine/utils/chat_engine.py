@@ -7,7 +7,7 @@ from openai import OpenAI
 from .retriever import retrieve_documents, retrieve_weather
 from .retriever import tools
 from .spinner import Spinner
-# from .tools import sovle_massage
+from .tools import sovle_response
 
 class ChatEngine:
     '''
@@ -18,12 +18,12 @@ class ChatEngine:
     '''
     def __init__(self, base_url):
         # check the connection to the OpenAI API
-        api_key = ""
+        self.api_key = ""
         if base_url == "http://localhost:1234/v1":
-            api_key = "lm-studio"
+            self.api_key = "lm-studio"
         elif base_url == "http://localhost:8080/v1":
-            api_key = "llama.cpp"
-        self.client = OpenAI(base_url=base_url, api_key=api_key)
+            self.api_key = "llama.cpp"
+        self.client = OpenAI(base_url=base_url, api_key=self.api_key)
 
         with Spinner("Initializing profiles"):
             self.date = time.strftime("%Y-%m-%d", time.localtime())
@@ -71,26 +71,42 @@ class ChatEngine:
         messages = self.messages
         messages.append({"role": "user", "content": query})
 
-        searchmessages = [
-            {"role": "system", "content": f"You are a AI assistant. "}, 
-            {"role": "assistant", "content": f"The current date is {self.date}"},
-            {"role": "user", "content": query}
-        ]
+        if self.api_key == "llama.cpp":
+            searchmessages = [
+                {"role": "system", 
+                "content": (
+                    "You are an AI assistant that, output a JSON object containing a 'tool_call' field with the function call details. "
+                    "Do not include any internal thinking or explanations—just output the tool_call JSON like"
+                    "\"tool_calls\": [{\"type\": \"function\",\"function\": {\"name\": \"?\",\"arguments\": {}\"}}"
+                    "It could be multi times to call different functions."
+                )}, 
+                {"role": "assistant", "content": f"The current date is {self.date}"},
+                {"role": "user", "content": query}
+            ]
+        else:
+            searchmessages = [
+                {"role": "system", "content": f"You are a AI assistant. "}, 
+                {"role": "assistant", "content": f"The current date is {self.date}"},
+                {"role": "user", "content": query}
+            ]
+
         print("\nAssistant>>", end=" ", flush=True)
         try:
             with Spinner("Thinking..."):
                 response = self.client.chat.completions.create(
                         model=self.model,
                         messages=searchmessages,
-                        temperature=0.3,
-                        max_tokens=1024,
+                        temperature=0.5,
+                        max_tokens=512,
                         tools=tools,
                         tool_choice="auto"
                 )
+                if self.api_key == "llama.cpp":
+                    sovle_response(response)
+
                 if response.choices[0].message.tool_calls:
                     # Handle all tool calls
                     for tool_call in response.choices[0].message.tool_calls:
-                        # print(tool_call.function.name)
                         if not tool_call.function.name in [tool['function']['name'] for tool in tools]:
                             continue
                         result = {"status": "error", "content": "None"}
@@ -102,7 +118,7 @@ class ChatEngine:
                             messages.append(
                                     {
                                         "role": "tool",
-                                        # "tool_call_id": tool_call.id,
+                                        "tool_call_id": tool_call.id,
                                         "name": tool_call.function.name,
                                         "content": json.dumps(result['content'], ensure_ascii=False)
                                     }

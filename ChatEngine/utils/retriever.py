@@ -1,6 +1,7 @@
 import json
 import requests
 import os
+from .tools import get_pinyin
 
 # Load the API keys from the configuration file
 # located at ChatEngine/config/key.json
@@ -43,7 +44,7 @@ def retrieve_documents(search_query: str) -> dict:
 
     if response.status_code == 200:
         # comment out the following line to disable logging
-        with open("ChatEngine/.log/search_log.json", "w") as f:
+        with open(f"ChatEngine/.log/search_log-{search_query}.json", "w") as f:
             json.dump(response.json(), f, ensure_ascii=False, indent=4)
             
         context = [{
@@ -64,6 +65,8 @@ def retrieve_weather(city: str, date: str) -> dict:
     # Replace with the API you use if different
     # check city string is chinese or english
     base_url = "http://api.weatherapi.com/v1"
+    if get_pinyin(city) != city.lower():
+        city = get_pinyin(city)
     params = {
         "key": weather_key,
         "q": city,
@@ -74,7 +77,7 @@ def retrieve_weather(city: str, date: str) -> dict:
 
     # Sending request to the weather API
     response = requests.get(f"{base_url}/forecast.json", params=params)
-    print(response)
+    # print(response)
 
     if response.status_code == 200:
         data = response.json()
