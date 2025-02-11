@@ -1,4 +1,5 @@
-from utils.chat_engine import ChatEngine
+from ChatEngine.utils.chat_engine import ChatEngine
+import os
 
 def chat_loop():
     chatEngine = ChatEngine("http://localhost:8080/v1")
@@ -16,7 +17,7 @@ def chat_loop():
             chatEngine.get_history()
             continue
         elif user_input.lower() == "/reset":
-            chatEngine.lower().reset_history()
+            chatEngine.reset_history()
             continue
         elif user_input.lower() == "/help" or user_input.lower() == "/":
             print("\nCommands:")
@@ -30,4 +31,5 @@ def chat_loop():
 
 
 if __name__ == "__main__":
+    os.path.dirname(__file__)
     chat_loop()

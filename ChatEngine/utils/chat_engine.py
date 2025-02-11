@@ -82,7 +82,7 @@ class ChatEngine:
                 response = self.client.chat.completions.create(
                         model=self.model,
                         messages=searchmessages,
-                        temperature=0.7,
+                        temperature=0.3,
                         max_tokens=1024,
                         tools=tools,
                         tool_choice="auto"
@@ -169,9 +169,8 @@ class ChatEngine:
         except Exception as e:
             print(
                 "An error occurred while processing your request. Please try again later.\n"
-                f"Error details: {str(e)}\n"
+                f"Error details: {str(e)}"
             )
-            exit(1)
 
     # get history
     def get_history(self):
