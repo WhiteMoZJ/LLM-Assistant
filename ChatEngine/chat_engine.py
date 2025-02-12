@@ -4,10 +4,12 @@ import os
 
 from openai import OpenAI
 
-from .retriever import retrieve_documents, retrieve_weather
-from .retriever import tools
-from .spinner import Spinner
-from .tools import sovle_response
+from .utils.retriever import retrieve_documents, retrieve_weather
+from .utils.retriever import tools
+from .utils.spinner import Spinner
+from .utils.tools import sovle_response
+
+path = os.path.dirname(__file__)
 
 class ChatEngine:
     '''
@@ -31,10 +33,10 @@ class ChatEngine:
             self.messages = [{"role": "system", "content": "你是一个AI助手，语言风格有趣，可以带emoji表情，主要回答用户疑问。"}]
             self.messages.append({"role": "assistant", "content": f"today date: {self.date}"})
 
-            if os.path.exists("ChatEngine/.data") == False:
-                os.mkdir("ChatEngine/.data")
+            if not os.path.exists(f"{path}/.data"):
+                os.mkdir(f"{path}/.data")
 
-            history_file = "ChatEngine/.data/history.json"
+            history_file = f"{path}/.data/history.json"
             # check history.json file
             try:
                 with open(history_file, "r") as f:
@@ -75,20 +77,20 @@ class ChatEngine:
             searchmessages = [
                 {"role": "system", 
                 "content": (
-                    "You are an AI assistant that, output a JSON object containing a 'tool_call' field with the function call details. "
+                    "You are an AI assistant that uses tools when needed, output a JSON object containing a 'tool_call' field with the function call details. "
                     "Do not include any internal thinking or explanations—just output the tool_call JSON like"
                     "\"tool_calls\": [{\"type\": \"function\",\"function\": {\"name\": \"?\",\"arguments\": {}\"}}"
                     "It could be multi times to call different functions."
-                )}, 
-                {"role": "assistant", "content": f"The current date is {self.date}"},
-                {"role": "user", "content": query}
+                )}
             ]
         else:
-            searchmessages = [
-                {"role": "system", "content": f"You are a AI assistant. "}, 
-                {"role": "assistant", "content": f"The current date is {self.date}"},
-                {"role": "user", "content": query}
-            ]
+            searchmessages = [{"role": "system", 
+                               "content": f"You are a AI assistant. "
+                               }]
+            
+        searchmessages.extend([
+            {"role": "assistant", "content": f"The current date is {self.date}"},
+            {"role": "user", "content": query}])
 
         print("\nAssistant>>", end=" ", flush=True)
         try:
@@ -96,7 +98,7 @@ class ChatEngine:
                 response = self.client.chat.completions.create(
                         model=self.model,
                         messages=searchmessages,
-                        temperature=0.5,
+                        temperature=0.4,
                         max_tokens=512,
                         tools=tools,
                         tool_choice="auto"
@@ -141,7 +143,7 @@ class ChatEngine:
                 stream_response = self.client.chat.completions.create(
                         model=self.model,
                         messages=messages,
-                        temperature=0.8,
+                        temperature=0.9,
                         max_tokens=4096,
                         frequency_penalty=0.8,
                         presence_penalty=0.5,
@@ -157,8 +159,8 @@ class ChatEngine:
                 content = chunk.choices[0].delta.content
                 if content:
                     if not think_content.endswith("</think>\n\n"):
-                            print(content, end="", flush=True)
-                            think_content += content
+                        print(content, end="", flush=True)
+                        think_content += content
                     else:
                         content = chunk.choices[0].delta.content
                         print(content, end="", flush=True)
@@ -179,7 +181,7 @@ class ChatEngine:
             )
 
             # Save the chat history to history.json
-            with open("ChatEngine/.data/history.json", "w") as f:
+            with open(f"{path}/.data/history.json", "w") as f:
                 json.dump(self.history, f, ensure_ascii=False, indent=4)
 
         except Exception as e:
@@ -196,5 +198,5 @@ class ChatEngine:
     # reset history
     def reset_history(self):
         self.history = []
-        with open("ChatEngine/.data/history.json", "w") as f:
+        with open(f"{path}/.data/history.json", "w") as f:
             json.dump(self.history, f, ensure_ascii=False, indent=4)

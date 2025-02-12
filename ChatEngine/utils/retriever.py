@@ -3,6 +3,15 @@ import requests
 import os
 from .tools import get_pinyin
 
+path = os.path.dirname(__file__)
+path = path.strip("/utils")
+with open(f"{path}/config/key.json", "r") as f:
+    key = json.load(f)
+    search_key = key["search_key"]
+    weather_key = key["weather_key"]
+if not os.path.exists(f"{path}/.log"):
+    os.mkdir(f"{path}/.log")
+
 # Load the API keys from the configuration file
 # located at ChatEngine/config/key.json
 # Format:
@@ -44,7 +53,7 @@ def retrieve_documents(search_query: str) -> dict:
 
     if response.status_code == 200:
         # comment out the following line to disable logging
-        with open(f"ChatEngine/.log/search_log-{search_query}.json", "w") as f:
+        with open(f"{path}/.log/search_log-{search_query}.json", "w") as f:
             json.dump(response.json(), f, ensure_ascii=False, indent=4)
             
         context = [{
@@ -148,20 +157,13 @@ def retrieve_weather(city: str, date: str) -> dict:
         }
 
         # comment out the following line to disable logging
-        with open("ChatEngine/.log/weather-{}-{}.json".format(city, date), "w") as f:
+        with open(f"{path}/.log/weather-{city.lower()}-{date}.json", "w") as f:
             json.dump(context, f, ensure_ascii=False, indent=4)
 
         return {
             "status": "success",
             "content": context
         }
-    
-with open("ChatEngine/config/key.json", "r") as f:
-    key = json.load(f)
-    search_key = key["search_key"]
-    weather_key = key["weather_key"]
-if os.path.exists("ChatEngine/.log") == False:
-    os.mkdir("ChatEngine/.log")
     
 # print(retrieve_weather("北京", "2025-02-07"))
 # print(retrieve_documents("八奈见杏菜"))

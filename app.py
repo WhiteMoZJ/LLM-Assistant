@@ -1,4 +1,4 @@
-from ChatEngine.utils.chat_engine import ChatEngine
+from ChatEngine.chat_engine import ChatEngine
 import os
 
 def chat_loop():
