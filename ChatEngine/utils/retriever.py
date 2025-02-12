@@ -53,7 +53,7 @@ def retrieve_documents(search_query: str) -> dict:
 
     if response.status_code == 200:
         # comment out the following line to disable logging
-        with open("ChatEngine/.log/search_log-{search_query}.json", "w") as f:
+        with open(f"ChatEngine/.log/search_log-{search_query}.json", "w") as f:
             json.dump(response.json(), f, ensure_ascii=False, indent=4)
             
         context = [{
@@ -157,7 +157,7 @@ def retrieve_weather(city: str, date: str) -> dict:
         }
 
         # comment out the following line to disable logging
-        with open("ChatEngine/.log/weather-{city.lower()}-{date}.json", "w") as f:
+        with open(f"ChatEngine/.log/weather-{city.lower()}-{date}.json", "w") as f:
             json.dump(context, f, ensure_ascii=False, indent=4)
 
         return {
