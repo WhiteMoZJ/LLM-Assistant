@@ -58,6 +58,7 @@ class ChatEngine:
             except FileNotFoundError:
                 self.history = []
                 welcome_message = "你好，初次见面！"
+            self.history.append({"role": "assistant", "content": "以上是历史消息。"})
 
             # print(self.history)
 
@@ -69,6 +70,9 @@ class ChatEngine:
         print("\n(Type '/' or '/help' for help, '/bye' to exit)")
 
     def generate_response(self, query):
+        think_content = ""
+        dialog_content = ""
+
         self.messages.extend(self.history)
         messages = self.messages
         messages.append({"role": "user", "content": query})
@@ -79,7 +83,8 @@ class ChatEngine:
                 "content": 
                 """
                     You are an AI assistant that uses tools when needed, output a JSON object containing a 'tool_call' field with the function call details. 
-                    Do not include any internal thinking or explanations—just output the tool_call JSON like
+                    Do not include any internal thinking or explanations—just output the tool_call JSON like:
+                    ```
                     "tool_calls": [
                         {
                             "type": "function",
@@ -88,12 +93,12 @@ class ChatEngine:
                                     "name": "function name",
                                     "arguments": {
                                         "arg1": "value1",
-                                        "arg2": "value2"
                                         ...
                                     }
                                 }
                         }
                     ]
+                    ```
                     It could be multi times to call different functions."
                 """}
             ]
@@ -154,21 +159,18 @@ class ChatEngine:
                                 f"Error details: {str(e)}\n"
                             )
 
-                stream_response = self.client.chat.completions.create(
-                        model=self.model,
-                        messages=messages,
-                        temperature=0.9,
-                        max_tokens=4096,
-                        frequency_penalty=0.8,
-                        presence_penalty=0.5,
-                        top_p=0.95,
-                        stream=True
-                )
+            stream_response = self.client.chat.completions.create(
+                    model=self.model,
+                    messages=messages,
+                    temperature=0.9,
+                    max_tokens=4096,
+                    frequency_penalty=0.8,
+                    presence_penalty=0.5,
+                    top_p=0.95,
+                    stream=True
+            )
             
             # Stream the post-tool-call response
-            think_content = ""
-            dialog_content = ""
-
             for chunk in stream_response:
                 content = chunk.choices[0].delta.content
                 if content:
@@ -181,17 +183,15 @@ class ChatEngine:
                         dialog_content += content
             print()  # New line after streaming completes
 
-            self.history.append(
-                {
+            self.history.extend(
+                [{
                     "role": "user",
                     "content": query
-                }
-            )
-            self.history.append(
+                },
                 {
                     "role": "assistant",
                     "content": dialog_content
-                }
+                }]
             )
 
             # Save the chat history to history.json
