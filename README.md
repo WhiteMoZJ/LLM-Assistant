@@ -27,6 +27,10 @@ If you need online search function, set the api(*ChatEngine/utils/retriever.py*)
     ```
 5. run **app.py** to start chat
 
+## Model Test List
+For my limited compter computility, only under 10B-parameter model can be tested
+- DeepSeek-R1-Distill-Llama-8B
+
 ## Reference:
 - [LM Studio](https://lmstudio.ai/)
 - [llama.cpp](https://github.com/ggerganov/llama.cpp)

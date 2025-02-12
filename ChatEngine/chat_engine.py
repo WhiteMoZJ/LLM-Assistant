@@ -76,12 +76,26 @@ class ChatEngine:
         if self.api_key == "llama.cpp":
             searchmessages = [
                 {"role": "system", 
-                "content": (
-                    "You are an AI assistant that uses tools when needed, output a JSON object containing a 'tool_call' field with the function call details. "
-                    "Do not include any internal thinking or explanations—just output the tool_call JSON like"
-                    "\"tool_calls\": [{\"type\": \"function\",\"function\": {\"name\": \"?\",\"arguments\": {}\"}}"
-                    "It could be multi times to call different functions."
-                )}
+                "content": 
+                """
+                    You are an AI assistant that uses tools when needed, output a JSON object containing a 'tool_call' field with the function call details. 
+                    Do not include any internal thinking or explanations—just output the tool_call JSON like
+                    "tool_calls": [
+                        {
+                            "type": "function",
+                            "function": 
+                                {
+                                    "name": "function name",
+                                    "arguments": {
+                                        "arg1": "value1",
+                                        "arg2": "value2"
+                                        ...
+                                    }
+                                }
+                        }
+                    ]
+                    It could be multi times to call different functions."
+                """}
             ]
         else:
             searchmessages = [{"role": "system", 

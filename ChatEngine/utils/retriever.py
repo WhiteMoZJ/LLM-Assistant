@@ -5,12 +5,12 @@ from .tools import get_pinyin
 
 path = os.path.dirname(__file__)
 path = path.strip("/utils")
-with open(f"{path}/config/key.json", "r") as f:
+with open("ChatEngine/config/key.json", "r") as f:
     key = json.load(f)
     search_key = key["search_key"]
     weather_key = key["weather_key"]
-if not os.path.exists(f"{path}/.log"):
-    os.mkdir(f"{path}/.log")
+if not os.path.exists("ChatEngine/.log"):
+    os.mkdir("ChatEngine/.log")
 
 # Load the API keys from the configuration file
 # located at ChatEngine/config/key.json
@@ -53,7 +53,7 @@ def retrieve_documents(search_query: str) -> dict:
 
     if response.status_code == 200:
         # comment out the following line to disable logging
-        with open(f"{path}/.log/search_log-{search_query}.json", "w") as f:
+        with open("ChatEngine/.log/search_log-{search_query}.json", "w") as f:
             json.dump(response.json(), f, ensure_ascii=False, indent=4)
             
         context = [{
@@ -157,7 +157,7 @@ def retrieve_weather(city: str, date: str) -> dict:
         }
 
         # comment out the following line to disable logging
-        with open(f"{path}/.log/weather-{city.lower()}-{date}.json", "w") as f:
+        with open("ChatEngine/.log/weather-{city.lower()}-{date}.json", "w") as f:
             json.dump(context, f, ensure_ascii=False, indent=4)
 
         return {
