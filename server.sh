@@ -1,4 +1,5 @@
 export MODEL="DeepSeek-R1-Distill-Llama-8B-Q4_K_M.gguf"
+export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$(cd $(dirname $0); pwd)/Server/llama.cpp
 export OFFLOAD=32
 export MAX_TOKENS=8192
 

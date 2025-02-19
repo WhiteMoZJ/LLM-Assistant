@@ -1,6 +1,6 @@
 # LLM-Assistant(Local test version)
 ## How to run
-If you need online search function, set the api(*ChatEngine/utils/retriever.py*) and keys(*ChatEngine/config/key.json*)
+If you need online search function, set up the api(*ChatEngine/utils/retriever.py*) and keys(*ChatEngine/config/key.json*)
 
 - Python >= 3.10
 
@@ -27,7 +27,7 @@ If you need online search function, set the api(*ChatEngine/utils/retriever.py*)
     ```
 5. run **app.py** to start chat
 
-## Model Test List
+## Model Tested List
 For my limited compter computility, only under 10B-parameter model can be tested
 - DeepSeek-R1-Distill-Llama-8B
 
